@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://hnishioji.github.io/photo-map-site/sitemap.xml
