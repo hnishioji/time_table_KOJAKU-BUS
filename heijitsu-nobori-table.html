@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>平日 上り 表形式 | 江若バス（大石小学校線）時刻表</title>
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/timetable-viewer.css">
+</head>
+<body>
+<div id="site-nav"></div>
+
+<main>
+  <div class="page-head">
+    <h1>平日　上り（石山駅着）　（表形式）</h1>
+    <p>縦スクロール＝停留所、横スクロール＝発車時刻。見出し行・見出し列は固定されます。
+      <a href="heijitsu-nobori.html">画像表示に戻る</a></p>
+  </div>
+
+  <div class="tt-toolbar" id="zoom-bar">
+    <span class="tt-zoom">
+      <button type="button" data-zoom="out" aria-label="文字を小さく">A−</button>
+      <button type="button" data-zoom="in" aria-label="文字を大きく">A＋</button>
+    </span>
+    <span class="hint">← スマホは指で上下左右にドラッグしてください →</span>
+  </div>
+
+  <div class="tt-wrap" id="tt-mount">
+    <p style="padding:20px;color:#888;">データを読み込み中…（data/heijitsu-nobori.json が見つからない場合はここに表示されません。scripts/xlsx_to_json.py で生成してください）</p>
+  </div>
+</main>
+
+<script src="assets/nav.js" defer></script>
+<script src="assets/timetable-viewer.js"></script>
+<script>
+  window.PAGE_TYPE = "timetable";
+  window.PAGE_CAT = "heijitsu";
+  window.PAGE_DIR = "nobori";
+
+  fetch("data/heijitsu-nobori.json")
+    .then(function (r) { if (!r.ok) throw new Error("not found"); return r.json(); })
+    .then(function (data) {
+      renderTimetable("tt-mount", data, { cornerLabel: "停留所 ＼ 平日上り" });
+      setupTimetableZoom("zoom-bar", "#tt-mount");
+    })
+    .catch(function () {
+      document.getElementById("tt-mount").innerHTML =
+        '<p style="padding:20px;color:#b00;">data/heijitsu-nobori.json が読み込めませんでした。scripts/xlsx_to_json.py で生成し、data/ フォルダに配置してください。</p>';
+    });
+</script>
+</body>
+</html>
