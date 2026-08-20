@@ -46,6 +46,21 @@ function renderTimetable(containerId, data, opts) {
   const table = document.createElement("table");
   table.className = "tt-table";
 
+  // ---- colgroup: 列幅の指定はここに一本化する（最も確実に効く方法）。
+  //      th/tdに直接 width を書く方式は、position:sticky や
+  //      white-space:nowrap との組み合わせでブラウザにより解釈がぶれることがあるため、
+  //      table-layout:fixed と組み合わせて col 要素で固定する。
+  const colgroup = document.createElement("colgroup");
+  const stopCol = document.createElement("col");
+  stopCol.className = "tt-col-stop";
+  colgroup.appendChild(stopCol);
+  data.columns.forEach(() => {
+    const c = document.createElement("col");
+    c.className = "tt-col-data";
+    colgroup.appendChild(c);
+  });
+  table.appendChild(colgroup);
+
   // ---- 見出し行（上端固定：系統番号・行先・時刻） ----
   const thead = document.createElement("thead");
   const headRow = document.createElement("tr");

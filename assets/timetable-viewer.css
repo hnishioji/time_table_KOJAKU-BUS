@@ -31,7 +31,7 @@
 }
 
 .tt-table{
-  table-layout:fixed;         /* 列幅を内容量ではなく指定幅に固定する */
+  table-layout:fixed;         /* 列幅は colgroup(col要素) の指定に従う */
   border-collapse:separate;   /* sticky併用にはseparateが必須 */
   border-spacing:0;
   font-size:var(--tt-font-size, 13px);
@@ -42,16 +42,20 @@
   border-right:1px solid #e5e1d6;
   border-bottom:1px solid #e5e1d6;
   text-align:center;
-  overflow-wrap:break-word;
-  word-break:break-all;   /* 行先名など、スペースの無いCJK文字列を強制的に折り返す */
+  box-sizing:border-box;
 }
 
-/* ---- データ列（系統・行先・時刻）: 「大石小学校」(全角5文字)を基準に幅を固定 ----
-   box-sizing:border-box（style.cssで全体に適用済み）により、
-   この width にはpadding/borderも含まれる。 */
-.tt-table thead th:not(.tt-corner),
-.tt-table tbody td{
-  width:5.8em;
+/* ---- 列幅の指定はここに一本化（colgroupのcol要素） ----
+   tt-col-stop = 左端の停留所名列（全角6文字ぶん、折り返さない）
+   tt-col-data = 系統・行先・時刻の列（全角5文字ぶん、行先ははみ出したら折り返す） */
+.tt-table col.tt-col-stop{ width:6.6em; }
+.tt-table col.tt-col-data{ width:5.8em; }
+
+/* 行先など、幅を超える文字列はここで折り返す（スペースの無いCJK文字列も強制改行） */
+.tt-table thead th:not(.tt-corner){
+  white-space:normal;
+  overflow-wrap:break-word;
+  word-break:break-all;
 }
 /* 時刻そのもの（"13:34"等）は折り返さない */
 .tt-table tbody td{
@@ -67,14 +71,12 @@
   color:var(--navy,#16324f);
   vertical-align:bottom;
   line-height:1.35;
-  white-space:normal;      /* 行先名は幅を超えたら折り返す */
-  word-break:break-all;
 }
 .tt-table thead th .tt-route{ display:block; font-weight:800; font-size:0.95em; }
 .tt-table thead th .tt-dest{ display:block; font-weight:500; font-size:0.82em; color:#555; }
 .tt-table thead th .tt-time{ display:block; font-weight:800; margin-top:2px; }
 
-/* ---- 見出し列（停留所名）: 左端固定。幅は少し余裕を持たせて固定 ---- */
+/* ---- 見出し列（停留所名）: 左端固定。折り返さず、はみ出したら省略記号 ---- */
 .tt-table tbody th{
   position:sticky;
   left:0;
@@ -83,9 +85,9 @@
   text-align:left;
   border-right:2px solid var(--navy,#16324f);
   font-weight:700;
-  width:7.2em;
-  white-space:normal;
-  word-break:break-all;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 /* ---- 左上の角セル: 縦横両方固定（最優先＝一番手前） ---- */
@@ -97,9 +99,9 @@
   background:var(--navy,#16324f);
   color:#fff;
   font-weight:700;
-  width:7.2em;
-  white-space:normal;
-  word-break:break-all;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 /* 偶数行の背景を薄く変えて横方向に目を追いやすくする（Excelの縞模様相当） */
