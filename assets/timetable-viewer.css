@@ -86,6 +86,13 @@
 .tt-table tbody tr:nth-child(even) th{ background:#f3f1e9; }
 
 .tt-table td.empty{ color:#c8c2b2; }
+.tt-table td.through{ color:#8fa0ad; font-weight:400; }  /* ｜・レ：通過（運行は継続） */
+
+/* Excelの「始発／終着」太罫線を再現。
+   run-start = その便でこの停留所が最初に値を持つセル（＝始発）
+   run-end   = その便でこの停留所が最後に値を持つセル（＝終着） */
+.tt-table td.run-start{ border-top:3px solid var(--navy,#16324f); }
+.tt-table td.run-end{ border-bottom:3px solid var(--navy,#16324f); }
 .tt-table td.now{ outline:2px solid #d99a2b; outline-offset:-2px; }
 
 @media (max-width:820px){

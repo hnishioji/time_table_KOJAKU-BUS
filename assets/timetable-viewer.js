@@ -4,13 +4,20 @@
 
    データ形式（JSON）:
    {
-     "stops": ["石山駅", "松原", ...],                // 上から下の停留所の並び順
+     "stops": [                                        // 上から下の停留所の並び順
+       { "id": "r6",  "name": "石山駅" },
+       { "id": "r7",  "name": "松原" },
+       ...
+       { "id": "r45", "name": "大石小学校" },            // 同じ名前が複数回出現してもOK。
+       { "id": "r90", "name": "大石小学校" },            // id（＝元Excelの行番号）で区別する。
+       ...
+     ],
      "columns": [
        {
          "route": "4",                                // 系統番号
          "dest": "大石小学校",                         // 行先（乗り継ぎ表記含む）
          "note": "",                                   // 接続・乗り継ぎ等の補足（任意）
-         "times": { "石山駅": "6:21", "松原": "6:22" } // stops名をキーにした時刻。
+         "times": { "r6": "6:21", "r7": "6:22" }       // stopの id をキーにした時刻。
                                                         // 停車しない停留所はキー自体を省略してよい
        },
        ...
@@ -24,6 +31,17 @@ function renderTimetable(containerId, data, opts) {
   opts = opts || {};
   const mount = document.getElementById(containerId);
   if (!mount) return;
+
+  // 各列（＝各便）ごとに「値が入っている最初の停留所id」＝始発、
+  // 「値が入っている最後の停留所id」＝終着 を先に求めておく。
+  // 「｜」「レ」も"その区間は運行している"印なので始発・終着の判定には含める。
+  data.columns.forEach((col) => {
+    const activeIds = data.stops
+      .map((s) => s.id)
+      .filter((id) => col.times && col.times[id]);
+    col._runStart = activeIds[0];
+    col._runEnd = activeIds[activeIds.length - 1];
+  });
 
   const table = document.createElement("table");
   table.className = "tt-table";
@@ -55,18 +73,32 @@ function renderTimetable(containerId, data, opts) {
 
     const rowTh = document.createElement("th");
     rowTh.scope = "row";
-    rowTh.textContent = stop;
+    rowTh.textContent = stop.name;
     tr.appendChild(rowTh);
 
     data.columns.forEach((col) => {
       const td = document.createElement("td");
-      const v = col.times ? col.times[stop] : undefined;
-      if (v) {
+      const v = col.times ? col.times[stop.id] : undefined;
+      if (v === "｜") {
+        // 停車せず通過（運行は継続）
+        td.textContent = "｜";
+        td.classList.add("through");
+      } else if (v === "レ") {
+        // 経路として通過（運行は継続）
+        td.textContent = "レ";
+        td.classList.add("through");
+      } else if (v) {
         td.textContent = v;
       } else {
-        td.textContent = "—";
-        td.className = "empty";
+        // 本当の空欄（この区間は運行なし）
+        td.textContent = "－";
+        td.classList.add("empty");
       }
+
+      // Excelの「上端太罫線＝始発／下端太罫線＝終着」を再現
+      if (col._runStart === stop.id) td.classList.add("run-start");
+      if (col._runEnd === stop.id) td.classList.add("run-end");
+
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
