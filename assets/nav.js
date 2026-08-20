@@ -40,7 +40,7 @@
     // 上段：サイトタイトル ＋ 路線図ボタン
     var top = el(
       '<div class="nav-top">' +
-        '<a class="site-title" href="index.html">江若バス（大石小学校線）時刻表' +
+        '<a class="site-title" href="index.html">江若バス　大津市／石山地区　時刻表' +
           '<small>非公式まとめ / 江若交通株式会社</small>' +
         '</a>' +
         '<a class="btn-map' + (type === "map" ? " active" : "") + '" href="rosenzu.html">🗺️ 路線図</a>' +
