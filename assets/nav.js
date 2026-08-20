@@ -17,8 +17,8 @@
     { id: "nichisai", label: "日祭日" }
   ];
   var DIRECTIONS = [
-    { id: "kudari-table", label: "下り（石山駅発）" },
-    { id: "nobori-table", label: "上り（石山駅着）" }
+    { id: "kudari", label: "下り（石山駅発）" },
+    { id: "nobori", label: "上り（石山駅着）" }
   ];
 
   function el(html) {
