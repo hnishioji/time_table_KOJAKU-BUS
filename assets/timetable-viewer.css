@@ -48,8 +48,8 @@
 /* ---- 列幅の指定はここに一本化（colgroupのcol要素） ----
    tt-col-stop = 左端の停留所名列（全角6文字ぶん、折り返さない）
    tt-col-data = 系統・行先・時刻の列（全角5文字ぶん、行先ははみ出したら折り返す） */
-.tt-table col.tt-col-stop{ width:6.6em; }
-.tt-table col.tt-col-data{ width:6.5em; }
+.tt-table col.tt-col-stop{ width:85px; }
+.tt-table col.tt-col-data{ width:70px; }
 
 /* 行先など、幅を超える文字列はここで折り返す（スペースの無いCJK文字列も強制改行） */
 .tt-table thead th:not(.tt-corner){
