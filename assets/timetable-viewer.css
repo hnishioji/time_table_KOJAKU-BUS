@@ -1,9 +1,16 @@
 /* ==========================================================
-   timetable-viewer.css
+   timetable-viewer.css  (CSS Grid版)
    Excelの「ウィンドウ枠の固定」相当を CSS position:sticky で再現。
    縦スクロール = 停留所（行）が流れる
    横スクロール = 時刻（列）が流れる
    見出し行・見出し列・左上の角セルは常に固定表示。
+
+   ★ 以前は <table> + table-layout:fixed + colgroup で列幅を固定して
+     いましたが、ブラウザによって「折り返せない内容（時刻文字列など）の
+     最小幅」を優先してしまい、指定した width が効かないケースがあった
+     ため、table を使わず CSS Grid に置き換えています。
+     Gridは grid-template-columns の値が内容量に一切左右されないため、
+     この種の問題が原理的に起こりません。
    ========================================================== */
 
 .tt-toolbar{
@@ -30,68 +37,68 @@
   overscroll-behavior:contain;
 }
 
-.tt-table{
-  table-layout:fixed;         /* 列幅は colgroup(col要素) の指定に従う */
-  border-collapse:separate;   /* sticky併用にはseparateが必須 */
-  border-spacing:0;
+/* ---- 列幅はここで決める（編集する場所はこの2つだけでOK） ----
+   --tt-stop-w = 左端の停留所名列の幅（全角6文字ぶんが目安）
+   --tt-data-w = 系統・行先・時刻の各列の幅（全角5文字ぶんが目安）
+   ※ Gridなので、ここの数値を変えれば必ずその通りの幅になる
+     （contentの内容量に左右されない）。 */
+.tt-grid{
+  --tt-stop-w: 6.6em;
+  --tt-data-w: 6.5em;
+
+  display:grid;
+  grid-auto-rows:min-content;
   font-size:var(--tt-font-size, 13px);
+  width:max-content;   /* 自身のトラック幅の合計ぶん確保し、shrinkさせない */
 }
-.tt-table th,
-.tt-table td{
+
+.tt-cell{
   padding:5px 4px;
   border-right:1px solid #e5e1d6;
   border-bottom:1px solid #e5e1d6;
-  text-align:center;
   box-sizing:border-box;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  overflow:hidden;
+  min-width:0;   /* Gridアイテムの暗黙のmin-widthをリセットし、内容がはみ出ないようにする */
 }
 
-/* ---- 列幅の指定はここに一本化（colgroupのcol要素） ----
-   tt-col-stop = 左端の停留所名列（全角6文字ぶん、折り返さない）
-   tt-col-data = 系統・行先・時刻の列（全角5文字ぶん、行先ははみ出したら折り返す） */
-.tt-table col.tt-col-stop{ width:85px; }
-.tt-table col.tt-col-data{ width:70px; }
-
-/* 行先など、幅を超える文字列はここで折り返す（スペースの無いCJK文字列も強制改行） */
-.tt-table thead th:not(.tt-corner){
-  white-space:normal;
-  overflow-wrap:break-word;
-  word-break:break-all;
-}
-/* 時刻そのもの（"13:34"等）は折り返さない */
-.tt-table tbody td{
-  white-space:nowrap;
-}
-
-/* ---- 見出し行（時刻・系統・行先）: 上端固定 ---- */
-.tt-table thead th{
+/* ---- 見出し行（系統・行先）: 上端固定。幅を超えたら折り返す ---- */
+.tt-cell.head{
   position:sticky;
   top:0;
   z-index:2;
   background:#eef1ea;
   color:var(--navy,#16324f);
-  vertical-align:bottom;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-end;
   line-height:1.35;
+  white-space:normal;
+  overflow-wrap:break-word;
+  word-break:break-all;  /* スペースの無いCJK文字列も強制的に折り返す */
 }
-.tt-table thead th .tt-route{ display:block; font-weight:800; font-size:0.95em; }
-.tt-table thead th .tt-dest{ display:block; font-weight:500; font-size:0.82em; color:#555; }
-.tt-table thead th .tt-time{ display:block; font-weight:800; margin-top:2px; }
+.tt-cell.head .tt-route{ font-weight:800; font-size:0.95em; text-align:center; }
+.tt-cell.head .tt-dest{ font-weight:500; font-size:0.82em; color:#555; text-align:center; }
 
 /* ---- 見出し列（停留所名）: 左端固定。折り返さず、はみ出したら省略記号 ---- */
-.tt-table tbody th{
+.tt-cell.stop{
   position:sticky;
   left:0;
   z-index:1;
   background:#fff;
-  text-align:left;
+  justify-content:flex-start;
   border-right:2px solid var(--navy,#16324f);
   font-weight:700;
   white-space:nowrap;
-  overflow:hidden;
   text-overflow:ellipsis;
 }
+.tt-cell.stop.row-even{ background:#f3f1e9; }
 
 /* ---- 左上の角セル: 縦横両方固定（最優先＝一番手前） ---- */
-.tt-table thead th.tt-corner{
+.tt-cell.corner{
   position:sticky;
   left:0;
   top:0;
@@ -99,27 +106,26 @@
   background:var(--navy,#16324f);
   color:#fff;
   font-weight:700;
+  border-right:2px solid var(--navy,#16324f);
   white-space:nowrap;
-  overflow:hidden;
   text-overflow:ellipsis;
 }
 
-/* 偶数行の背景を薄く変えて横方向に目を追いやすくする（Excelの縞模様相当） */
-.tt-table tbody tr:nth-child(even) th,
-.tt-table tbody tr:nth-child(even) td{ background:#faf9f5; }
-.tt-table tbody tr:nth-child(even) th{ background:#f3f1e9; }
+/* ---- データセル（時刻） ---- */
+.tt-cell.time{ white-space:nowrap; }
+.tt-cell.time.row-even{ background:#faf9f5; }
 
-.tt-table td.empty{ color:#c8c2b2; }
-.tt-table td.through{ color:#8fa0ad; font-weight:400; }  /* ｜・レ：通過（運行は継続） */
+.tt-cell.empty{ color:#c8c2b2; }
+.tt-cell.through{ color:#8fa0ad; font-weight:400; }  /* ｜・レ：通過（運行は継続） */
 
 /* Excelの「始発／終着」太罫線を再現。
    run-start = その便でこの停留所が最初に値を持つセル（＝始発）
    run-end   = その便でこの停留所が最後に値を持つセル（＝終着） */
-.tt-table td.run-start{ border-top:3px solid var(--navy,#16324f); }
-.tt-table td.run-end{ border-bottom:3px solid var(--navy,#16324f); }
-.tt-table td.now{ outline:2px solid #d99a2b; outline-offset:-2px; }
+.tt-cell.run-start{ border-top:3px solid var(--navy,#16324f); }
+.tt-cell.run-end{ border-bottom:3px solid var(--navy,#16324f); }
+.tt-cell.now{ outline:2px solid #d99a2b; outline-offset:-2px; }
 
 @media (max-width:820px){
-  .tt-table{ font-size: var(--tt-font-size, 12px); }
-  .tt-table th, .tt-table td{ padding:5px 3px; }
+  .tt-grid{ font-size: var(--tt-font-size, 12px); }
+  .tt-cell{ padding:5px 3px; }
 }

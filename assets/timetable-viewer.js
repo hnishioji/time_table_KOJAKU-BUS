@@ -1,6 +1,13 @@
 /* ==========================================================
-   timetable-viewer.js
+   timetable-viewer.js  (CSS Grid版)
    汎用の「固定行・固定列」時刻表レンダラー。
+
+   ★ 以前は <table> で組んでいましたが、table-layout:fixed が
+     ブラウザによって「折り返せない内容（時刻文字列など）の最小幅」を
+     優先してしまい、指定した列幅が効かないケースがあったため、
+     table を使わず CSS Grid（div構造）に置き換えています。
+     列幅の実体は assets/timetable-viewer.css の
+     --tt-stop-w / --tt-data-w で決まる。
 
    データ形式（JSON）:
    {
@@ -43,85 +50,68 @@ function renderTimetable(containerId, data, opts) {
     col._runEnd = activeIds[activeIds.length - 1];
   });
 
-  const table = document.createElement("table");
-  table.className = "tt-table";
+  const nCols = data.columns.length;
 
-  // ---- colgroup: 列幅の指定はここに一本化する（最も確実に効く方法）。
-  //      th/tdに直接 width を書く方式は、position:sticky や
-  //      white-space:nowrap との組み合わせでブラウザにより解釈がぶれることがあるため、
-  //      table-layout:fixed と組み合わせて col 要素で固定する。
-  const colgroup = document.createElement("colgroup");
-  const stopCol = document.createElement("col");
-  stopCol.className = "tt-col-stop";
-  colgroup.appendChild(stopCol);
-  data.columns.forEach(() => {
-    const c = document.createElement("col");
-    c.className = "tt-col-data";
-    colgroup.appendChild(c);
-  });
-  table.appendChild(colgroup);
+  const grid = document.createElement("div");
+  grid.className = "tt-grid";
+  // 列数ぶんの grid-template-columns をここで組み立てる。
+  // 幅の実際の値は CSS変数 --tt-stop-w / --tt-data-w（timetable-viewer.css側）で決まるので、
+  // 数値を変えたいときは JS ではなく CSS を編集すればよい。
+  grid.style.gridTemplateColumns =
+    "var(--tt-stop-w) repeat(" + nCols + ", var(--tt-data-w))";
 
-  // ---- 見出し行（上端固定：系統番号・行先・時刻） ----
-  const thead = document.createElement("thead");
-  const headRow = document.createElement("tr");
+  function makeCell(classNames, innerHTML) {
+    const div = document.createElement("div");
+    div.className = "tt-cell " + classNames;
+    if (innerHTML !== undefined) div.innerHTML = innerHTML;
+    return div;
+  }
 
-  const corner = document.createElement("th");
-  corner.className = "tt-corner";
-  corner.textContent = opts.cornerLabel || "停留所 ＼ 発車便";
-  headRow.appendChild(corner);
-
+  // ---- 見出し行（上端固定：系統番号・行先） ----
+  grid.appendChild(
+    makeCell("corner", escapeHtml(opts.cornerLabel || "停留所 ＼ 発車便"))
+  );
   data.columns.forEach((col) => {
-    const th = document.createElement("th");
-    th.innerHTML =
+    const html =
       '<span class="tt-route">' + escapeHtml(col.route || "") + "</span>" +
       '<span class="tt-dest">' + escapeHtml(col.dest || "") + "</span>" +
       (col.note ? '<span class="tt-dest">(' + escapeHtml(col.note) + ")</span>" : "");
-    headRow.appendChild(th);
+    grid.appendChild(makeCell("head", html));
   });
-  thead.appendChild(headRow);
-  table.appendChild(thead);
 
   // ---- 本体（左端固定：停留所名 / 中身：各時刻） ----
-  const tbody = document.createElement("tbody");
-  data.stops.forEach((stop) => {
-    const tr = document.createElement("tr");
+  data.stops.forEach((stop, rowIdx) => {
+    const rowEven = rowIdx % 2 === 1 ? " row-even" : "";
 
-    const rowTh = document.createElement("th");
-    rowTh.scope = "row";
-    rowTh.textContent = stop.name;
-    tr.appendChild(rowTh);
+    grid.appendChild(makeCell("stop" + rowEven, escapeHtml(stop.name)));
 
     data.columns.forEach((col) => {
-      const td = document.createElement("td");
       const v = col.times ? col.times[stop.id] : undefined;
+      let extra = "";
+      let text = "";
+
       if (v === "｜") {
-        // 停車せず通過（運行は継続）
-        td.textContent = "｜";
-        td.classList.add("through");
+        text = "｜";
+        extra = " through";
       } else if (v === "レ") {
-        // 経路として通過（運行は継続）
-        td.textContent = "レ";
-        td.classList.add("through");
+        text = "レ";
+        extra = " through";
       } else if (v) {
-        td.textContent = v;
+        text = v;
       } else {
-        // 本当の空欄（この区間は運行なし）
-        td.textContent = "－";
-        td.classList.add("empty");
+        text = "－";
+        extra = " empty";
       }
 
-      // Excelの「上端太罫線＝始発／下端太罫線＝終着」を再現
-      if (col._runStart === stop.id) td.classList.add("run-start");
-      if (col._runEnd === stop.id) td.classList.add("run-end");
+      if (col._runStart === stop.id) extra += " run-start";
+      if (col._runEnd === stop.id) extra += " run-end";
 
-      tr.appendChild(td);
+      grid.appendChild(makeCell("time" + rowEven + extra, escapeHtml(text)));
     });
-    tbody.appendChild(tr);
   });
-  table.appendChild(tbody);
 
   mount.innerHTML = "";
-  mount.appendChild(table);
+  mount.appendChild(grid);
 }
 
 /* 文字サイズ変更ボタン（スマホでの見やすさ調整用）。
