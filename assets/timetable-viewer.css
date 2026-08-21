@@ -43,8 +43,8 @@
    ※ Gridなので、ここの数値を変えれば必ずその通りの幅になる
      （contentの内容量に左右されない）。 */
 .tt-grid{
-  --tt-stop-w: 6.6em;
-  --tt-data-w: 6.5em;
+  --tt-stop-w: 7.6em;
+  --tt-data-w: 6.0em;
 
   display:grid;
   grid-auto-rows:min-content;
